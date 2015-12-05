@@ -1,0 +1,15 @@
+#scrambled {
+  font-size: 30px;
+}
+
+#unscrambled {
+  font-size: 30px;
+}
+
+.correct {
+  color: green;
+}
+
+.wrong {
+  color: red;
+}
