@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "description": "Word Scramble mini game",
   "main": "main.js",
+  "scripts": {
+    "start": "node server/server.js"
+  },
   "dependencies": {
     "babel-preset-react": "^6.3.13",
     "babelify": "^7.2.0",
