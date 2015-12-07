@@ -9,13 +9,15 @@ var Words = React.createClass({
   getInitialState: function () {
     return {
       originalWord: '',
-      scrambledWord: this._getWord(),
-      unscrambledWord: '',
-      check: 'unscrambling'
+      scrambledWord: [],
+      unscrambledWord: [],
+      check: 'guessing',
+      checkFlag: true
     };
   },
 
   componentDidMount: function () {
+    this._getWord();
     window.addEventListener('keydown', this._unscrambleWord);
   },
 
@@ -24,15 +26,35 @@ var Words = React.createClass({
   },
 
   render: function() {
-
-    var scrambled = this.state.scrambledWord;
-    var unscrambled = this.state.unscrambledWord;
+    if(this.state.scrambledWord) {
+      var scrambled = this.state.scrambledWord;
+      var letterScramble = scrambled.map(function(letter, i) {
+        return (
+          <span className="letter" key={i}>{letter}</span>
+        )
+      })
+    }
+    if(this.state.unscrambledWord) {
+      var unscrambled = this.state.unscrambledWord;
+      var letterUnscramble = unscrambled.map(function(letter, i) {
+        return (
+          <span className="letter" key={i + 1}><strong>{letter}</strong></span>
+        )
+      })
+    }
     var check = this.state.check;
 
+
     return (
-      <div className="words" >
-        <span id="scrambled">{scrambled}</span>
-        <span id="unscrambled" className={check}><strong>{unscrambled}</strong></span>
+      <div id="game">
+        <div id="word" className={check}>
+          <span id="scrambled">
+          {letterScramble}
+          </span>
+          <span id="unscrambled">
+          {letterUnscramble}
+          </span>
+        </div>
       </div>
     );
   },
@@ -50,17 +72,18 @@ var Words = React.createClass({
       var pick = i + Math.floor(Math.random() * (splitWord.length - i));
       swap(i, pick);
     };
-
+    //returns an array
     return splitWord;
   },
 
   _getWord: function () {
     wordsApi.getRandomWord(function (word) {
-      var shuffled = this._shuffle(word.word);
+      var lowerCase = word.word.toLowerCase();
+      var shuffled = this._shuffle(lowerCase);
       this.setState({
-        originalWord: word.word,
+        originalWord: word.word.toLowerCase(),
         scrambledWord: shuffled,
-        unscrambledWord: ''
+        unscrambledWord: []
       })
     }.bind(this));
   },
@@ -81,11 +104,8 @@ var Words = React.createClass({
     if(e.keyCode === 8) {
       e.preventDefault();
       if(unscrambled.length !== 0 && scrambled.length > 0) {
-        unscrambled = unscrambled.split("");
         var removed = unscrambled.pop();
-        unscrambled = unscrambled.join("");
         scrambled.push(removed);
-        console.log(unscrambled, 'join');
         this.setState({
           unscrambledWord: unscrambled,
           scrambledWord: scrambled
@@ -95,34 +115,45 @@ var Words = React.createClass({
     //iterate through array to see if letter is part of the word
     for(var j = 0; j < scrambled.length; j++) {
       if(character === scrambled[j]) {
-        unscrambled += scrambled.splice(j,1)[0];
+        unscrambled.push(scrambled.splice(j,1)[0]);
         this.setState({
           unscrambledWord: unscrambled
         });
         break;
       }
     }
-    //Check the word to see if it is correct or not
-    if (scrambled.length === 0) {
-      setTimeout(function () {
-        if (unscrambled === original) {
+    //Check the word to see if it is correct
+    if (scrambled.length === 0 && this.state.checkFlag) {
+      if (unscrambled.join("") === original) {
+        this.setState({
+          check: 'correct',
+          checkFlag: false
+        });
+        setTimeout(function () {
           this.setState({
             originalWord: '',
             scrambledWord: this._getWord(),
-            unscrambledWord: ''
+            unscrambledWord: [],
+            check: 'guessing',
+            checkFlag: true
           })
-          console.log('got it!')
-        } else {
+        }.bind(this), 1000 );
+      } else {
           this.setState({
-            scrambledWord: unscrambled.split(""),
-            unscrambledWord: '',
-            check: 'wrong'
+            check: 'wrong',
+            checkFlag: false
           });
+          setTimeout(function () {
+            this.setState({
+              scrambledWord: unscrambled,
+              unscrambledWord: [],
+              check: 'guessing',
+              checkFlag: true
+            })
+          }.bind(this), 1000 );
         }
-      }.bind(this), 1000);
     }
   }
-
 });
 
 module.exports = Words;

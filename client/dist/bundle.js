@@ -3,7 +3,7 @@ var $ = require('jquery');
 
 exports.getRandomWord = function (callback) {
   $.ajax({
-    url: 'http://api.wordnik.com:80/v4/words.json/randomWord?hasDictionaryDef=true&includePartOfSpeech=verb&excludePartOfSpeech=proper-noun&minCorpusCount=50000&maxCorpusCount=-1&minDictionaryCount=1&maxDictionaryCount=-1&minLength=5&maxLength=8&api_key=a2a73e7b926c924fad7001ca3111acd55af2ffabf50eb4ae5',
+    url: 'http://api.wordnik.com:80/v4/words.json/randomWord?hasDictionaryDef=true&excludePartOfSpeech=proper-noun&minCorpusCount=50000&maxCorpusCount=-1&minDictionaryCount=5&maxDictionaryCount=-1&minLength=5&maxLength=8&api_key=a2a73e7b926c924fad7001ca3111acd55af2ffabf50eb4ae5',
     type: 'GET',
     success: function (data) {
       console.log(data);
@@ -30,13 +30,15 @@ var Words = React.createClass({
   getInitialState: function () {
     return {
       originalWord: '',
-      scrambledWord: this._getWord(),
-      unscrambledWord: '',
-      check: 'correct'
+      scrambledWord: [],
+      unscrambledWord: [],
+      check: 'guessing',
+      checkFlag: true
     };
   },
 
   componentDidMount: function () {
+    this._getWord();
     window.addEventListener('keydown', this._unscrambleWord);
   },
 
@@ -45,26 +47,47 @@ var Words = React.createClass({
   },
 
   render: function () {
-
-    var scrambled = this.state.scrambledWord;
-    var unscrambled = this.state.unscrambledWord;
+    if (this.state.scrambledWord) {
+      var scrambled = this.state.scrambledWord;
+      var letterScramble = scrambled.map(function (letter, i) {
+        return React.createElement(
+          'span',
+          { className: 'letter', key: i },
+          letter
+        );
+      });
+    }
+    if (this.state.unscrambledWord) {
+      var unscrambled = this.state.unscrambledWord;
+      var letterUnscramble = unscrambled.map(function (letter, i) {
+        return React.createElement(
+          'span',
+          { className: 'letter', key: i + 1 },
+          React.createElement(
+            'strong',
+            null,
+            letter
+          )
+        );
+      });
+    }
     var check = this.state.check;
 
     return React.createElement(
       'div',
-      { className: 'words' },
+      { id: 'game' },
       React.createElement(
-        'span',
-        { id: 'scrambled' },
-        scrambled
-      ),
-      React.createElement(
-        'span',
-        { id: 'unscrambled', className: check },
+        'div',
+        { id: 'word', className: check },
         React.createElement(
-          'strong',
-          null,
-          unscrambled
+          'span',
+          { id: 'scrambled' },
+          letterScramble
+        ),
+        React.createElement(
+          'span',
+          { id: 'unscrambled' },
+          letterUnscramble
         )
       )
     );
@@ -83,17 +106,18 @@ var Words = React.createClass({
       var pick = i + Math.floor(Math.random() * (splitWord.length - i));
       swap(i, pick);
     };
-
+    //returns an array
     return splitWord;
   },
 
   _getWord: function () {
     wordsApi.getRandomWord((function (word) {
-      var shuffled = this._shuffle(word.word);
+      var lowerCase = word.word.toLowerCase();
+      var shuffled = this._shuffle(lowerCase);
       this.setState({
-        originalWord: word.word,
+        originalWord: word.word.toLowerCase(),
         scrambledWord: shuffled,
-        unscrambledWord: ''
+        unscrambledWord: []
       });
     }).bind(this));
   },
@@ -113,11 +137,8 @@ var Words = React.createClass({
     if (e.keyCode === 8) {
       e.preventDefault();
       if (unscrambled.length !== 0 && scrambled.length > 0) {
-        unscrambled = unscrambled.split("");
         var removed = unscrambled.pop();
-        unscrambled = unscrambled.join("");
         scrambled.push(removed);
-        console.log(unscrambled, 'join');
         this.setState({
           unscrambledWord: unscrambled,
           scrambledWord: scrambled
@@ -127,34 +148,45 @@ var Words = React.createClass({
     //iterate through array to see if letter is part of the word
     for (var j = 0; j < scrambled.length; j++) {
       if (character === scrambled[j]) {
-        unscrambled += scrambled.splice(j, 1)[0];
+        unscrambled.push(scrambled.splice(j, 1)[0]);
         this.setState({
           unscrambledWord: unscrambled
         });
         break;
       }
     }
-    //Check the word to see if it is correct or not
-    if (scrambled.length === 0) {
-      setTimeout((function () {
-        if (unscrambled === original) {
+    //Check the word to see if it is correct
+    if (scrambled.length === 0 && this.state.checkFlag) {
+      if (unscrambled.join("") === original) {
+        this.setState({
+          check: 'correct',
+          checkFlag: false
+        });
+        setTimeout((function () {
           this.setState({
             originalWord: '',
             scrambledWord: this._getWord(),
-            unscrambledWord: ''
+            unscrambledWord: [],
+            check: 'guessing',
+            checkFlag: true
           });
-          console.log('got it!');
-        } else {
+        }).bind(this), 1000);
+      } else {
+        this.setState({
+          check: 'wrong',
+          checkFlag: false
+        });
+        setTimeout((function () {
           this.setState({
-            scrambledWord: unscrambled.split(""),
-            unscrambledWord: '',
-            check: 'wrong'
+            scrambledWord: unscrambled,
+            unscrambledWord: [],
+            check: 'guessing',
+            checkFlag: true
           });
-        }
-      }).bind(this), 1000);
+        }).bind(this), 1000);
+      }
     }
   }
-
 });
 
 module.exports = Words;

@@ -1,9 +1,44 @@
-#scrambled {
-  font-size: 30px;
+@import url(https://fonts.googleapis.com/css?family=Montserrat:400,700);
+
+body, html {
+  height: 100%;
+  font-family: 'Montserrat', sans-serif;
 }
 
-#unscrambled {
-  font-size: 30px;
+body {
+  font-weight: 600;
+  font-size: 60px;
+  background: #7FD3FF;
+}
+
+#title {
+  text-align: center;
+  font-size: 40px;
+  margin-bottom: 100px;
+}
+
+#game {
+  top: 30%;
+  position: relative;
+}
+
+#word {
+  top: 30%;
+  text-align: center;
+  height: 80px;
+}
+
+.letter {
+  display: inline-block;
+  height: 80px;
+  width: 80px;
+  margin: 0 5px;
+  background: #D4D4D4;
+  border: solid;
+}
+
+#unscrambled .letter {
+  background-color: #D4D141;
 }
 
 .correct {
